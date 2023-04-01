@@ -13,7 +13,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     # gather.say('Hello, and welcome to Dreambox! After the tone, please record a dream you have that you want to visualize and share with the world.')
     # response.append(gather)
     response = VoiceResponse()
-    gather = Gather(input='speech', action='/generated')
+    gather = Gather(input='speech', action='/parse')
     gather.say('Hello, and welcome to Dreambox! After the tone, please record a dream you have that you want to visualize and share with the world.')
     response.append(gather)
 
