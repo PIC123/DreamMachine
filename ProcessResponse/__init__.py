@@ -6,6 +6,7 @@ import uuid
 import azure.functions as func
 import openai
 from azure.data.tables import (TableServiceClient, UpdateMode)
+import requests
 
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
@@ -25,8 +26,10 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     chat_resp = chat_resp.get("choices")[0].get("message").get("content")
     logging.info(chat_resp)
 
-    fixed_message = json.loads(chat_resp).get("FixedTranscript")
+    fixed_message = json.loads(chat_resp).get("corrected_message")
     dalle_prompt = json.loads(chat_resp).get("dalle_prompt")
+    keywords = json.loads(chat_resp).get("keywords")
+    sentiment = json.loads(chat_resp).get("sentiment")
 
 
     img_resp = openai.Image.create(
@@ -47,9 +50,34 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 "RowKey": str(uuid.uuid4()),
                 "OriginalTranscript": spoken_response,
                 "FixedTranscript": fixed_message,
-                "ImageURLs": json.dumps(img_urls)
+                "Keywords": json.dumps(keywords),
+                "Sentiment": json.dumps(sentiment),
+                "ImageURLs": json.dumps(img_urls),
+                "DallePrompt": dalle_prompt,
             }
     dream_table_client.create_entity(entity=dream_data)
+
+    url = "https://dream-machine-helper.azurewebsites.net/api/saveImage"
+
+    headers = {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "DELETE, POST, GET, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
+        'Content-Type': 'application/json',
+    }
+
+    state_table_client = table_service_client.get_table_client(table_name="state")
+    state = state_table_client.list_entities().next()
+
+    data = {
+        "imgURL": img_urls[0],
+        "id": state.get("userCount")
+    }
+
+    logging.info(data)
+
+    requests.post(url, headers=headers, json=data)
+
     return func.HttpResponse(
              json.dumps(dream_data),
              status_code=200

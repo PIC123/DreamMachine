@@ -13,6 +13,19 @@ from azure.data.tables import (TableServiceClient, UpdateMode)
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
+
+    STORAGE_CONN_STRING = os.environ["STORAGE_CONN_STRING"]
+    table_service_client = TableServiceClient.from_connection_string(conn_str=STORAGE_CONN_STRING)
+    state_table_client = table_service_client.get_table_client(table_name="state")
+    state = state_table_client.list_entities().next()
+    state_data = {
+                "PartitionKey": "0",
+                "RowKey": "0",
+                "isInUse": True,
+                "userCount": state.get("userCount") + 1,
+            }
+    state_table_client.update_entity(entity=state_data)
+
     logging.info(parseResp(req.get_body()))
     spoken_response = parseResp(req.get_body())
     logging.info(spoken_response)
@@ -25,15 +38,15 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
         'Content-Type': 'application/json',
     }
- 
+
     data = {
         "spoken_response": spoken_response
     }
 
-    response = requests.post(url, headers=headers, json=data)
+    requests.post(url, headers=headers, json=data)
 
     response = VoiceResponse()
-    response.say("Thanks for sharing your dream!",voice='alice')
+    response.say("Thanks for sharing your dream!", voice='alice')
     return str(response)
 
 def parseResp(resp_body):
