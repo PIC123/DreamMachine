@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 
@@ -14,8 +15,11 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     state_table_client = table_service_client.get_table_client(table_name="state")
     state = state_table_client.list_entities().next()
     latestImgURL = state.get("latestImgUrl")
+    resp_data = {
+        "url": latestImgURL,
+    }
     
     return func.HttpResponse(
-            latestImgURL,
+            json.dumps(resp_data),
             status_code=200
     )

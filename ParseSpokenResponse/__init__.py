@@ -30,6 +30,12 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     spoken_response = parseResp(req.get_body())
     logging.info(spoken_response)
 
+    if(spoken_response == "The Google subscriber you've called is not available. Please leave a message after the tone."):
+        return func.HttpResponse(
+            "No response",
+            status_code=200
+        )
+
     url = "https://dream-machine-helper.azurewebsites.net/api/process"
 
     headers = {
